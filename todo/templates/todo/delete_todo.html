@@ -1,0 +1,54 @@
+{% extends 'todo/base.html' %}
+
+{% block title %}Delete Todo - Django Todo App{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow border-danger">
+            <div class="card-header bg-danger text-white">
+                <h3 class="mb-0">
+                    <i class="bi bi-exclamation-triangle"></i> Delete Todo
+                </h3>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-4">
+                    <i class="bi bi-trash display-1 text-danger"></i>
+                </div>
+                
+                <h5 class="card-title">Are you sure?</h5>
+                <p class="card-text">
+                    You are about to delete the todo item:
+                </p>
+                
+                <div class="alert alert-warning">
+                    <strong>"{{ todo.title }}"</strong>
+                    {% if todo.description %}
+                        <br><small class="text-muted">{{ todo.description|truncatewords:15 }}</small>
+                    {% endif %}
+                </div>
+                
+                <p class="text-muted small">
+                    <i class="bi bi-calendar3"></i> 
+                    Created: {{ todo.created_at|date:"M d, Y" }}
+                </p>
+                
+                <p class="text-danger">
+                    <strong>This action cannot be undone!</strong>
+                </p>
+            </div>
+            <div class="card-footer">
+                <form method="post" class="d-flex gap-2 justify-content-center">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Yes, Delete It
+                    </button>
+                    <a href="{% url 'todo:todo_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+# Django Todo Project Requirements
+# Core Django Framework
+Django==5.2.5
+
+# Database (SQLite is included with Python, but you can add other databases if needed)
+# psycopg2-binary==2.9.9  # For PostgreSQL
+# mysqlclient==2.2.0      # For MySQL
+
+# Development and Debugging
+django-debug-toolbar==4.2.0  # For development debugging
+django-extensions==3.2.3     # Useful Django extensions
+
+# Environment Variables
+python-dotenv==1.0.0         # For loading environment variables
+
+# Static Files and Media
+Pillow==10.1.0               # For image processing (if needed later)
+
+# Testing
+pytest==7.4.3                # Testing framework
+pytest-django==4.7.0         # Django testing utilities
+
+# Code Quality
+black==23.11.0               # Code formatter
+flake8==6.1.0                # Linter
+isort==5.12.0                # Import sorter
+
+# Production (optional - uncomment when deploying)
+# gunicorn==21.2.0           # WSGI server for production
+# whitenoise==6.6.0          # Static file serving
+# django-cors-headers==4.3.1  # CORS handling for APIs
+
+# Development Tools (optional)
+# ipython==8.17.2            # Enhanced Python shell
+# django-extensions==3.2.3   # Additional Django management commands

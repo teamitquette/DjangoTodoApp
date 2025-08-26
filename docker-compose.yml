@@ -1,0 +1,130 @@
+version: '3.8'
+
+services:
+  # Django Web Application
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: django-todo-app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=False
+      - DJANGO_SETTINGS_MODULE=todoproject.settings
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/tododb
+      - SECRET_KEY=your-secret-key-change-in-production
+      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+      - ./logs:/app/logs
+    depends_on:
+      - db
+    networks:
+      - todo-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: django-todo-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=tododb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - todo-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (for caching and sessions)
+  redis:
+    image: redis:7-alpine
+    container_name: django-todo-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - todo-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: django-todo-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - static_volume:/app/staticfiles:ro
+      - media_volume:/app/media:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - web
+    networks:
+      - todo-network
+
+  # Development service (optional)
+  web-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: django-todo-dev
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    environment:
+      - DEBUG=True
+      - DJANGO_SETTINGS_MODULE=todoproject.settings
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/tododb_dev
+    volumes:
+      - .:/app
+      - /app/venv
+    depends_on:
+      - db
+    networks:
+      - todo-network
+    profiles:
+      - dev
+    command: python manage.py runserver 0.0.0.0:8000
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  static_volume:
+    driver: local
+  media_volume:
+    driver: local
+
+networks:
+  todo-network:
+    driver: bridge
