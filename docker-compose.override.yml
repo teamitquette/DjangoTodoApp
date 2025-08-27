@@ -1,0 +1,20 @@
+# Development overrides for docker-compose
+# This file is automatically loaded when running docker-compose up
+
+version: '3.8'
+
+services:
+  web:
+    # Override command for development (auto-reload)
+    command: python manage.py runserver 0.0.0.0:8000
+    # Mount current directory for live code changes
+    volumes:
+      - .:/app
+      - /app/venv
+    # Enable debug mode
+    environment:
+      - DEBUG=True
+    # Expose additional ports if needed
+    ports:
+      - "8000:8000"
+      - "8001:8001"  # For additional services if needed
