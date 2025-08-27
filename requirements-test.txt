@@ -1,0 +1,26 @@
+# Test dependencies for Todo Django project
+# Install with: pip install -r requirements-test.txt
+
+# Core Django testing
+Django>=5.2.5
+
+# Test coverage
+coverage>=7.3.2
+
+# Test data generation
+factory-boy>=3.3.0
+
+# Mocking for tests
+mock>=5.1.0
+
+# Performance testing
+pytest-benchmark>=4.0.0
+
+# Code quality tools
+flake8>=6.1.0
+black>=23.12.0
+isort>=5.13.0
+
+# Additional testing utilities
+pytest-django>=4.7.0
+pytest-cov>=4.1.0

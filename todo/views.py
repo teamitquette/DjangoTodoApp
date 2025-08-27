@@ -36,6 +36,7 @@ class DeleteTodoView(DeleteView):
     model = TodoItem
     template_name = 'todo/delete_todo.html'
     success_url = reverse_lazy('todo:todo_list')
+    context_object_name = 'todo'
     
     def delete(self, request, *args, **kwargs):
         messages.success(request, 'Todo item deleted successfully!')
