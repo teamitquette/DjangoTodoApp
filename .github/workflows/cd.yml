@@ -1,7 +1,7 @@
-name: Deploy to ECS
+name: CD
 
 on:
-  pull_request:
+  push:
     branches: [ main, master ]
   workflow_dispatch:
 
@@ -16,6 +16,7 @@ jobs:
   deploy:
     name: Deploy to ECS
     runs-on: ubuntu-latest
+    environment: production  # Adds approval gate (optional)
 
     steps:
     - name: Checkout
@@ -36,10 +37,15 @@ jobs:
       id: build-image
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        IMAGE_TAG: pr-${{ github.event.number }}-${{ github.sha }}
+        IMAGE_TAG: ${{ github.sha }}  # Use commit SHA for main branch
       run: |
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        
+        # Also tag as latest
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        
         echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
     - name: Download current task definition
@@ -78,3 +84,5 @@ jobs:
         aws ecs wait services-stable \
           --cluster ${{ env.ECS_CLUSTER }} \
           --services ${{ env.ECS_SERVICE }}
+        
+        echo "✅ Deployment completed successfully!"
