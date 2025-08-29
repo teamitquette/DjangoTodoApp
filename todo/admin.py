@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import TodoItem
 
-# Register your models here.
+# Register your models here for admin panel
 @admin.register(TodoItem)
 class TodoItemAdmin(admin.ModelAdmin):
     list_display = ['title', 'completed', 'created_at']

@@ -1,7 +1,7 @@
-name: Deploy to ECS
+name: CD
 
 on:
-  pull_request:
+  push:
     branches: [ main, master ]
   workflow_dispatch:
 
@@ -16,7 +16,7 @@ jobs:
   deploy:
     name: Deploy to ECS
     runs-on: ubuntu-latest
-    environment: staging
+    environment: production  # Adds approval gate (optional)
 
     steps:
     - name: Checkout
@@ -37,10 +37,15 @@ jobs:
       id: build-image
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        IMAGE_TAG: pr-${{ github.event.number }}-${{ github.sha }}
+        IMAGE_TAG: ${{ github.sha }}  # Use commit SHA for main branch
       run: |
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        
+        # Also tag as latest
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        
         echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
     - name: Download current task definition
@@ -59,9 +64,25 @@ jobs:
         image: ${{ steps.build-image.outputs.image }}
 
     - name: Deploy to Amazon ECS
-      uses: aws-actions/amazon-ecs-deploy-service@v1
-      with:
-        service: ${{ env.ECS_SERVICE }}
-        cluster: ${{ env.ECS_CLUSTER }}
-        wait-for-service-stability: true
-        task-definition: ${{ steps.task-def.outputs.task-definition }}
+      run: |
+        # Register the new task definition and get its ARN
+        TASK_DEF_ARN=$(aws ecs register-task-definition \
+          --cli-input-json file://${{ steps.task-def.outputs.task-definition }} \
+          --query 'taskDefinition.taskDefinitionArn' \
+          --output text)
+        
+        echo "Registered new task definition: $TASK_DEF_ARN"
+        
+        # Update the service with the new task definition
+        aws ecs update-service \
+          --cluster ${{ env.ECS_CLUSTER }} \
+          --service ${{ env.ECS_SERVICE }} \
+          --task-definition $TASK_DEF_ARN \
+          --force-new-deployment
+        
+        echo "Waiting for service to become stable..."
+        aws ecs wait services-stable \
+          --cluster ${{ env.ECS_CLUSTER }} \
+          --services ${{ env.ECS_SERVICE }}
+        
+        echo "✅ Deployment completed successfully!"
